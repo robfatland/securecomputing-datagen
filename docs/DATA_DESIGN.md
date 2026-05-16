@@ -96,12 +96,13 @@ Each synthetic patient's OMOP record will include condition/procedure history th
 
 | Attribute | Value |
 |-----------|-------|
-| **Clinical context** | Kidney stone composition analysis. Patient passes or has stone surgically removed; specimen sent to lab for crystallographic analysis to determine mineral composition. Results inform treatment (e.g., dietary modification, medication). |
+| **Clinical context** | Kidney stone composition analysis via powder X-ray diffraction (PXRD) and Fourier Transform Infrared Spectroscopy (FTIR). Patient passes or has stone surgically removed; specimen sent to lab for dual analysis to determine mineral composition. Results inform treatment (e.g., dietary modification, medication). |
 | **Records** | 0–3 per patient (not all patients have kidney stones; some have recurrent stones). Estimated ~5,000–8,000 total files. |
-| **Format** | CIF (Crystallographic Information File) — plain-text, human-readable, IUCr standard |
-| **Size per file** | ~1–5 KB (crystallography of known minerals is compact) |
-| **Link to patient** | Metadata file maps filename → MRN; filename contains MRN |
+| **Format** | CIF (Crystallographic Information File) — plain-text, human-readable, IUCr standard. Each file contains both PXRD pattern (2θ vs. intensity) and FTIR spectrum (wavenumber vs. transmittance). |
+| **Size per file** | ~2–5 KB (tabular diffraction + spectroscopy data is compact) |
+| **Link to patient** | Metadata in CIF header contains MRN; filename contains MRN |
 | **OMOP integration** | PROCEDURE_OCCURRENCE (stone collection/removal), SPECIMEN (kidney stone), CONDITION_OCCURRENCE (nephrolithiasis), MEASUREMENT (composition percentages) |
+| **Visualization** | Dual-panel chart: PXRD (top) + FTIR (bottom). See `analysis/notebooks/XRay.ipynb` |
 
 ### Clinical Pathway in OMOP
 

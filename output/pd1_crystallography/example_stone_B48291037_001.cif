@@ -1,0 +1,109 @@
+#=============================================================================
+# Synthetic Kidney Stone Analysis - Powder X-ray Diffraction + FTIR
+# Patient MRN: B48291037
+# Specimen: Kidney stone, collected 2024-03-15
+# Analysis date: 2024-03-18
+# Lab: UW Clinical Mineralogy (synthetic)
+# Composition: 78% Whewellite (COM) + 22% Weddellite (COD)
+#
+# THIS IS SYNTHETIC DATA - NOT FROM A REAL PATIENT
+#=============================================================================
+
+data_stone_B48291037_001
+
+_audit_creation_date             2024-03-18
+_audit_creation_method           'securecomputing-datagen synthetic generator'
+
+_chemical_name_common            'Kidney stone specimen'
+_chemical_compound_source        'Patient B48291037, left kidney'
+
+# Phase 1: Whewellite (Calcium Oxalate Monohydrate) - 78%
+_pd_phase_name                   'Whewellite'
+_chemical_name_mineral           'Whewellite'
+_chemical_formula_sum            'Ca C2 O4 H2 O'
+_chemical_formula_weight         146.11
+_pd_phase_mass_%                 78.3
+
+_cell_length_a                   6.290(3)
+_cell_length_b                   14.583(7)
+_cell_length_c                   10.112(5)
+_cell_angle_alpha                90.00
+_cell_angle_beta                 109.46(2)
+_cell_angle_gamma                90.00
+_cell_volume                     874.6(7)
+_symmetry_space_group_name_H-M   'P 2_1/c'
+_symmetry_Int_Tables_number      14
+
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+Ca1  Ca  0.2483  0.0531  0.4321  1.0
+C1   C   0.1012  0.2894  0.3421  1.0
+C2   C   0.0534  0.3312  0.4512  1.0
+O1   O   0.0231  0.2341  0.2812  1.0
+O2   O   0.2134  0.3123  0.3156  1.0
+O3   O   0.1423  0.3891  0.5234  1.0
+O4   O   0.8912  0.3012  0.4723  1.0
+O5   O   0.4312  0.1234  0.6123  1.0
+
+# Powder XRD data (2-theta, intensity) - Cu K-alpha radiation, lambda=1.5406 Ang
+# Synthetic diffraction pattern based on whewellite + weddellite reference patterns
+
+loop_
+_pd_meas_2theta_scan
+_pd_meas_intensity_total
+14.93   234
+15.78   312
+20.05   156
+23.42   89
+24.37   1000
+25.12   423
+28.34   267
+29.42   178
+30.12   534
+32.01   312
+33.45   189
+36.12   267
+37.89   145
+38.56   201
+40.12   123
+42.34   167
+44.56   98
+46.78   134
+48.12   87
+50.34   112
+
+# FTIR data (wavenumber cm-1, transmittance %)
+# Characteristic peaks for calcium oxalate monohydrate
+
+loop_
+_pd_ir_wavenumber
+_pd_ir_transmittance
+3600  92.3
+3500  88.1
+3430  45.2
+3340  38.7
+3250  42.1
+3100  78.4
+3000  85.2
+2900  89.3
+2800  91.2
+2500  93.1
+2000  94.5
+1800  93.2
+1620  22.4
+1480  65.3
+1320  28.9
+1100  72.4
+1030  78.2
+950   82.1
+885   75.3
+780   35.6
+660   52.3
+600   58.9
+520   42.1
+480   55.3

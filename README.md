@@ -50,7 +50,7 @@ securecomputing-datagen/
 
 ## Status
 
-🔄 **Placeholder structure.** Data generation design and implementation will occur during Phase 3 of the `securecomputing` project. See `securecomputing/PROJECT_OVERVIEW.md` for the full project lifecycle.
+🔄 **Specifications complete. Generator code not yet written.** See `BUILD.md` for the full step-by-step pipeline and code status.
 
 ## Related
 

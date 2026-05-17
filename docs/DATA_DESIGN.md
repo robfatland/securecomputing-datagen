@@ -115,6 +115,44 @@ PERSON (patient)
   └── MEASUREMENT: Stone composition (e.g., 80% calcium oxalate monohydrate, 20% calcium phosphate)
 ```
 
+### Stone Episode Distribution
+
+Number of stone episodes per patient (probability distribution for generation):
+
+| Episodes | Probability | Patients (of 10,000) | CIF Files Generated |
+|----------|-------------|---------------------|---------------------|
+| 0 | 20% | 2,000 | 0 |
+| 1 | 40% | 4,000 | 4,000 |
+| 2 | 30% | 3,000 | 6,000 |
+| 3 | 10% | 1,000 | 3,000 |
+| **Total** | | | **13,000** |
+
+### Stone Composition Distribution
+
+For each stone episode, composition is drawn from the following distribution:
+
+| Stone Type | Frequency | Mineral Composition (ranges) |
+|-----------|-----------|------------------------------|
+| Pure COM | 35% | 100% whewellite |
+| Mixed COM/COD | 25% | 60–90% whewellite + 10–40% weddellite |
+| Pure COD | 5% | 100% weddellite |
+| COM + calcium phosphate | 10% | 50–80% whewellite + 20–50% hydroxyapatite or brushite |
+| Pure uric acid | 8% | 100% uric acid |
+| Uric acid + COM | 4% | 40–70% uric acid + 30–60% whewellite |
+| Struvite | 5% | 70–100% struvite + 0–30% hydroxyapatite |
+| Brushite | 3% | 80–100% brushite + 0–20% hydroxyapatite |
+| Cystine | 1% | 100% cystine |
+| Mixed other | 4% | Various combinations |
+
+**Generation process:**
+1. Draw stone type from the frequency distribution above
+2. Draw composition percentages from a uniform distribution within the stated ranges
+3. Generate PXRD pattern by summing reference diffraction patterns weighted by mineral percentages
+4. Generate FTIR spectrum by summing reference absorption spectra weighted by mineral percentages
+5. Add Gaussian noise to both patterns (simulating measurement uncertainty)
+
+Each mineral has known, deterministic reference patterns (peak positions and relative intensities for PXRD; absorption bands for FTIR). The synthetic data is the weighted sum of these references — the *analysis* task is to decompose the mixture back into its components.
+
 ### Common Kidney Stone Compositions (for synthetic generation)
 
 | Mineral | Chemical Formula | Frequency in Real Stones | CIF Cell Parameters (approx) |
@@ -198,14 +236,54 @@ chr2    67890   .       C    T    25    PASS    DP=42
 ...
 ```
 
-### Generation Approach (TBD)
+### Generation Approach: Clinically Coherent Variants
 
-- Generate synthetic VCF files with randomized variants
-- Use realistic chromosome positions and allele frequencies
-- Vary number of variants per patient (100–10,000 variants per file)
-- Include header metadata linking to patient MRN
+**Principle:** Synthetic VCF files contain variants in kidney stone-associated genes that are consistent with each patient's stone composition (PD1) and lab values (PD3). A researcher querying "do patients with cystine stones have SLC3A1 variants?" would find the expected signal.
 
-> 🔄 **Details TBD.** Scientific validity of variant calls is not required — the data must be structurally correct (valid VCF format) and linked to patients.
+**Kidney Stone-Associated Genes (for synthetic variant generation):**
+
+| Gene | Chromosome | Protein | Associated Stone Type | Variant Type to Generate |
+|------|-----------|---------|----------------------|--------------------------|
+| **SLC3A1** | chr2 | Cystine transporter (rBAT) | Cystine | Missense/nonsense (autosomal recessive — generate homozygous or compound het) |
+| **SLC7A9** | chr19 | Cystine transporter (b0,+AT) | Cystine | Missense (autosomal recessive) |
+| **CLCN5** | chrX | Chloride channel (ClC-5) | Calcium (COM/COD) | Missense/deletion (X-linked — hemizygous in males) |
+| **CASR** | chr3 | Calcium-sensing receptor | Calcium | Gain-of-function missense |
+| **VDR** | chr12 | Vitamin D receptor | Calcium | Common polymorphisms (FokI, BsmI, ApaI, TaqI) |
+| **AGXT** | chr2 | Alanine-glyoxylate aminotransferase | Calcium oxalate (severe) | Missense/nonsense (autosomal recessive — primary hyperoxaluria type 1) |
+| **GRHPR** | chr9 | Glyoxylate reductase | Calcium oxalate | Missense (autosomal recessive — primary hyperoxaluria type 2) |
+| **HOGA1** | chr10 | 4-hydroxy-2-oxoglutarate aldolase | Calcium oxalate | Missense (autosomal recessive — primary hyperoxaluria type 3) |
+| **SLC22A12** | chr11 | Urate transporter (URAT1) | Uric acid | Loss-of-function missense |
+| **APRT** | chr16 | Adenine phosphoribosyltransferase | 2,8-dihydroxyadenine | Missense/nonsense (autosomal recessive — rare) |
+
+**Cross-dataset coherence rules:**
+
+| Patient's Stone Type (PD1) | Genes with Variants (PD2) | Lab Correlations (PD3) |
+|---------------------------|---------------------------|------------------------|
+| Cystine (CYS) | SLC3A1 and/or SLC7A9 (homozygous or compound het) | Elevated urine cystine |
+| Calcium oxalate — severe/recurrent (COM) | AGXT, GRHPR, or HOGA1 | Elevated urine oxalate, elevated urine calcium |
+| Calcium oxalate — common (COM/COD) | VDR polymorphisms, CLCN5, or CASR | Mildly elevated serum/urine calcium |
+| Uric acid (UA) | SLC22A12 | Elevated serum uric acid, low urine pH |
+| 2,8-dihydroxyadenine (rare) | APRT | Normal uric acid (distinguishes from UA stones) |
+| Struvite (MAP) | No genetic predisposition (infection-driven) | Alkaline urine pH, elevated WBC |
+| No stones | Background variants only (common VDR polymorphisms at population frequency) | All values normal |
+
+**Implementation:**
+- For each patient, determine stone status from PD1
+- Select appropriate gene(s) from the table above
+- Generate 1–3 pathogenic/likely-pathogenic variants in those genes at plausible exonic positions
+- Add 100–10,000 background variants (benign, common SNPs across the genome) for realism
+- Patients without stones get only background variants (no pathogenic variants in stone genes)
+- VDR polymorphisms appear at population frequencies (~30–50%) in all patients regardless of stone status (common variants with modest effect size)
+- Variant positions drawn from known exonic regions of each gene (realistic coordinates)
+- Allele frequencies for pathogenic variants set low (0.001–0.01) consistent with rare disease variants
+
+**Expected analysis outcomes:**
+- Association test (stone type vs. gene variants): statistically significant for the encoded relationships
+- Patients with cystine stones are enriched for SLC3A1/SLC7A9 variants (p < 0.001)
+- Patients with COM stones show higher frequency of AGXT/VDR variants than controls
+- No unexpected associations beyond the 10 genes listed above — the data contains only established relationships
+
+> 🔄 **Details TBD:** Exact genomic coordinates, reference/alternate alleles, and quality scores will be drawn from ClinVar or gnomAD databases for realism. The generation script will use these as templates with minor randomization.
 
 ---
 
@@ -238,14 +316,54 @@ PD3 and the OMOP MEASUREMENT table overlap intentionally:
 | **Liver Function** | ALT, AST, ALP, Bilirubin, Albumin | U/L, mg/dL, g/dL | Standard clinical ranges |
 | **HbA1c** | Hemoglobin A1c | % | <5.7 normal, 5.7–6.4 prediabetes, ≥6.5 diabetes |
 
-### Generation Approach (TBD)
+### Kidney Stone-Relevant Lab Tests
 
+In real clinical data, the following lab values correlate with kidney stone type. These correlations are documented here for reference but are **deliberately NOT encoded** in the synthetic data (see Null Hypothesis Design below).
+
+| Lab Test | Normal Range | Real-World Stone Association | Stone Type |
+|----------|-------------|------------------------------|------------|
+| Serum calcium | 8.5–10.5 mg/dL | Elevated → calcium stones | COM, COD |
+| Urine calcium (24hr) | <250 mg/day (F), <300 (M) | Elevated → strongest predictor of calcium stones | COM, COD |
+| Serum uric acid | 3.5–7.2 mg/dL (M), 2.6–6.0 (F) | Elevated → uric acid stones | UA |
+| Urine pH | 5.5–7.0 | Low (<5.5) → UA stones; High (>7.0) → struvite/brushite | UA, MAP, BRU |
+| Serum creatinine | 0.7–1.3 mg/dL | Elevated → renal impairment from obstruction | Any |
+| BUN | 7–20 mg/dL | Elevated with dehydration (risk factor) | Any |
+| Urine oxalate (24hr) | <40 mg/day | Elevated → calcium oxalate stones | COM, COD |
+| Urine citrate (24hr) | >320 mg/day | Low → calcium stones (citrate inhibits crystallization) | COM, COD |
+| Serum potassium | 3.5–5.0 mEq/L | Low → associated with hypocitraturia | COM, COD |
+| Serum phosphorus | 2.5–4.5 mg/dL | Elevated → calcium phosphate stones | BRU |
+| PTH | 15–65 pg/mL | Elevated → hypercalcemia → calcium stones | COM, COD |
+
+### Generation Approach: Clinically Coherent Design
+
+**Principle:** Lab values are generated with known clinical correlations encoded — patients with kidney stones show the lab abnormalities that real stone patients exhibit. The data confirms established clinical knowledge; it contains no novel or unexpected signals.
+
+**Design intent:** A researcher analyzing this data should find exactly what established literature predicts (elevated calcium in calcium stone patients, elevated uric acid in UA stone patients, etc.) and nothing more. The "null hypothesis" in the research sense is that nothing *novel* is occurring — the data behaves as clinical knowledge predicts. There are no hidden surprises, no unexplained correlations, no discoveries to be made. This validates that the analysis pipeline works correctly: it detects known relationships and does not hallucinate spurious ones.
+
+**Encoded correlations:**
+
+| Patient Group | Lab Abnormalities Generated | Basis |
+|---------------|----------------------------|-------|
+| Patients with COM/COD stones | Elevated urine calcium (~60% of group); low urine citrate (~40%); mildly elevated serum calcium (~20%); elevated PTH (~10%) | Established clinical literature |
+| Patients with uric acid stones | Elevated serum uric acid (~70%); low urine pH (~80%) | Established clinical literature |
+| Patients with struvite stones | Alkaline urine pH (~90%); elevated WBC (~60%) | Infection-associated stones |
+| Patients with no stones | All values drawn from population-normal distributions | Healthy controls |
+| All patients regardless of stone status | Standard panels (BMP, CBC, Lipid, Liver, HbA1c) within normal ranges for non-stone-related tests | Background clinical data |
+
+**Implementation:**
 - Generate time-series lab values per patient (3–20 lab visits over observation period)
-- Values drawn from distributions matching normal/abnormal ranges
-- Correlate with OMOP conditions (diabetic patients have elevated HbA1c; liver disease patients have elevated ALT/AST)
-- Include realistic noise and occasional missing values
+- For stone patients: relevant lab values shifted toward abnormal per the table above (drawn from shifted distributions, not hard-coded values)
+- For non-stone patients: all values from population-normal distributions
+- Non-stone-related tests (e.g., liver function in a calcium stone patient) remain normal — correlations are specific, not global
+- ~5% of values in any group fall outside expected range (biological noise)
+- Include realistic inter-visit variation, occasional missing values, and temporal trends (e.g., values worsen before stone event, improve after treatment)
+- Effect sizes calibrated to be statistically detectable at N=10,000 with standard methods (t-test, logistic regression)
 
-> 🔄 **Details TBD.** Key requirement: structurally valid lab data, linked to patients, with clinically plausible (not random) value distributions.
+**Expected analysis outcomes:**
+- Correlation between stone type and relevant lab values: statistically significant (p < 0.05)
+- Correlation between stone type and *irrelevant* lab values (e.g., liver function): not significant (p >> 0.05)
+- No novel/unexpected correlations discoverable — the data contains only established relationships
+- Standard clinical analysis correctly identifies known risk factors; exploratory analysis finds nothing new
 
 ---
 
@@ -292,9 +410,16 @@ PHI_MAPPING table (PD0)
 
 ## Output Structure
 
+Generated data is written to `~/securecomputing-data/` — a separate location from both repos. This mirrors the production architecture where data lives in S3, not in git. The datagen *code* lives in this repo; the generated *output* does not.
+
+**Why separate:**
+- Avoids dumping data bytes into GitHub (13,000+ files, ~1–6 GB total)
+- Mirrors production: code ≠ data
+- In production, this data would be PHI in S3 — keeping it out of git is the correct habit
+
 ```
-output/
-├── pd0_omop/
+~/securecomputing-data/
+├── pd0/
 │   ├── person.csv
 │   ├── observation_period.csv
 │   ├── visit_occurrence.csv
@@ -303,24 +428,23 @@ output/
 │   ├── procedure_occurrence.csv
 │   ├── measurement.csv
 │   ├── specimen.csv
-│   ├── phi_mapping.csv          ← The PHI extension (names, MRNs, addresses)
-│   └── vocabulary/              ← OMOP standard vocabulary files
-├── pd1_crystallography/
-│   ├── metadata.csv             ← Maps filename → MRN → dates
-│   └── files/
-│       ├── study_B48291037_001.cif
-│       ├── study_B48291037_002.cif
-│       └── ...
-├── pd2_genomics/
-│   ├── metadata.csv             ← Maps filename → MRN → specimen date
-│   └── files/
-│       ├── patient_B48291037.vcf
-│       ├── patient_C19374625.vcf
-│       └── ...
-├── pd3_lab_results/
-│   └── lab_results.csv          ← All patients, all visits, all panels
-└── manifest.json                ← File inventory + SHA-256 checksums (for upload validation)
+│   ├── phi_mapping.csv
+│   └── vocabulary/
+├── pd1/
+│   ├── stone_B48291037_001.cif
+│   ├── stone_B48291037_002.cif
+│   ├── stone_C19374625_001.cif
+│   └── ... (~13,000 files, ~40–65 MB total)
+├── pd2/
+│   ├── patient_B48291037.vcf
+│   ├── patient_C19374625.vcf
+│   └── ... (10,000 files, ~500 MB – 5 GB total)
+├── pd3/
+│   └── lab_results.csv (~50–100 MB)
+└── manifest.json
 ```
+
+**Estimated total volume: ~1–6 GB** (fits comfortably on a laptop; the range depends on VCF variant count per patient).
 
 ---
 

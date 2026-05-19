@@ -8,6 +8,29 @@ Step-by-step instructions for generating the full synthetic dataset (PD0–PD3).
 
 ---
 
+## Synthea: Role in This Project
+
+[Synthea](https://github.com/synthetichealth/synthea) is an open-source synthetic patient generator. It produced the base population of 11,272 patients with full medical histories — demographics, encounters, conditions, medications, procedures, lab results, and vitals (~7 GB of CSV data).
+
+**What Synthea provides:** The raw patient data foundation (PD0 starting point).
+
+**What this project's code adds on top of Synthea output:**
+
+| Script | Purpose |
+|--------|---------|
+| `synthea_to_omop.py` | Custom ETL: converts Synthea CSV format → OMOP CDM v5.4 tables |
+| `generate_phi.py` | Adds MRNs (project format) and consolidates PHI identifiers |
+| `assign_stones.py` | Overlays kidney stone episodes onto Synthea patients (80% get stones) |
+| `enrich_omop_stones.py` | Adds stone diagnoses, procedures, and composition measurements to OMOP |
+| `generate_pd1.py` | Generates CIF files (PXRD + FTIR) from stone composition assignments |
+| `generate_pd2.py` | Generates VCF files with stone-correlated genetic variants |
+| `generate_pd3.py` | Generates longitudinal lab results correlated with stone type |
+| `generate_manifest.py` | SHA-256 checksums for upload validation |
+
+**After data generation is complete:** The `~/synthea` folder can be deleted (~500 MB) — the output is preserved in `~/securecomputing-data/synthea_raw/`. Synthea is only needed again if regenerating patients (different count, geography, etc.).
+
+---
+
 ## Step 1: Install Synthea
 
 > ⚠️ **Build note:** The Synthea project (github.com/synthetichealth/synthea) was built for the purpose of generating synthetic EHR data, but deployment and execution was found to be problematical in this prototype build. Issues encountered included: git clone failures on WSL, Java toolchain detection failures with Gradle 9.x, and undocumented default export format (FHIR JSON rather than CSV). Eventually a successful procedure was produced (May 2026) by the `kiro` AI Coding Assistant as described below. No official Docker container exists from the Synthea team; community images exist but are FHIR-focused. A project-specific Dockerfile is a future to-do item.

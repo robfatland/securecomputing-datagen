@@ -1,3 +1,7 @@
+\newpage
+
+<!-- SOURCE: BUILD.md -->
+
 # BUILD: Generating Synthetic PHI Data
 
 Step-by-step instructions for generating the full synthetic dataset (PD0–PD3).

@@ -87,11 +87,57 @@ python generators/generate_manifest.py --data-dir ~/securecomputing-data --outpu
 
 ## Generating PDF Documentation
 
-```bash
-sudo apt install pandoc texlive-xetex texlive-latex-recommended texlive-fonts-recommended texlive-latex-extra
+All markdown files can be consolidated into a single PDF using Pandoc.
 
+### Prerequisites (WSL/Ubuntu)
+
+**1. Pandoc and LaTeX**
+
+```bash
+sudo apt update
+sudo apt install -y pandoc texlive-latex-recommended texlive-fonts-recommended \
+  texlive-latex-extra texlive-xetex
+```
+
+**2. Unicode fonts**
+
+```bash
+sudo apt install -y fonts-dejavu
+```
+
+**3. Mermaid support (if diagrams are added later)**
+
+```bash
+npm install --global @mermaid-js/mermaid-cli mermaid-filter
+```
+
+**4. Chromium dependencies (for mermaid-filter)**
+
+```bash
+sudo apt install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+  libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 \
+  libpango-1.0-0 libcairo2 libasound2
+```
+
+### Generate PDF
+
+```bash
 cd ~/securecomputing-datagen
-pandoc --toc --toc-depth=2 -V geometry:margin=1in --pdf-engine=xelatex \
-  README.md BUILD.md docs/DATA_DESIGN.md \
+pandoc --toc --toc-depth=2 -V geometry:margin=1in \
+  -V mainfont="DejaVu Sans" -V monofont="DejaVu Sans Mono" \
+  --pdf-engine=xelatex \
+  --lua-filter=strip-emoji.lua \
+  README.md \
+  BUILD.md \
+  docs/DATA_DESIGN.md \
   -o SecureComputing_DataGen_Book.pdf
+```
+
+### Alternative: HTML output (no LaTeX needed)
+
+```bash
+pandoc --toc --toc-depth=2 --standalone \
+  --lua-filter=strip-emoji.lua \
+  README.md BUILD.md docs/DATA_DESIGN.md \
+  -o SecureComputing_DataGen_Book.html
 ```

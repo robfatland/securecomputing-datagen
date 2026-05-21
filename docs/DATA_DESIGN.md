@@ -1,3 +1,7 @@
+\newpage
+
+<!-- SOURCE: docs/DATA_DESIGN.md -->
+
 # Synthetic Data Design
 
 ## Overview
